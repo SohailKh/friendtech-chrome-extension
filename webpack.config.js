@@ -11,7 +11,7 @@ module.exports = {
     minimize: false,
   },
   output: {
-    path: path.resolve(__dirname, "./lib"),
+    path: path.resolve(__dirname, "./extension"),
     filename: "[name].js",
   },
   resolve: {

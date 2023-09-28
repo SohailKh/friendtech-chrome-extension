@@ -1,31 +1,46 @@
-// content.js
+function injectStats(user: User) {
+  // Locate the stats section using the UserName attribute
+  const userNameElement = document.querySelector('[data-testid="UserName"]');
+  if (!userNameElement) return;
 
-import { createObserver } from "./dom/create_observer";
+  const statsSection = userNameElement.parentElement;
+  if (!statsSection) return;
 
-// observe dom tree to detect username section when added
-const observer = createObserver('div[data-testid="UserName"]', injectStats);
-const reactRoot = document.querySelector("#react-root") as unknown as Node;
-observer.observe(reactRoot, { subtree: true, childList: true });
-
-function injectStats(statsSection: Element) {
   const existingStat =
     findStatElementByText(statsSection, "Followers") ||
     findStatElementByText(statsSection, "Following");
 
   if (!existingStat) return;
-
+  console.log("existingStat", existingStat);
   // Clone existing stat to keep its styles and structure
-  const newStat1 = existingStat.cloneNode(true);
-  const newStat2 = existingStat.cloneNode(true);
+  const supplyStat = existingStat.parentElement?.cloneNode(true) as HTMLElement;
+  const usdPriceStat = existingStat.parentElement?.cloneNode(
+    true
+  ) as HTMLElement;
+  const ethPriceStat = existingStat.parentElement?.cloneNode(
+    true
+  ) as HTMLElement;
+  // const addressStat = existingStat.cloneNode(true);
 
   // Modify the cloned stats with your new data
-  updateStat(newStat1, "NewStat1", "12345");
-  updateStat(newStat2, "NewStat2", "67890");
+  updateLink(supplyStat, user.address, "Supply", user.supply.toLocaleString());
+  updateLink(
+    usdPriceStat,
+    user.address,
+    "Price (USD)",
+    user.usdPrice.toLocaleString()
+  );
+  updateLink(
+    ethPriceStat,
+    user.address,
+    "Price (ETH)",
+    user.ethPrice.toLocaleString()
+  );
 
   // Append the new stats below the existing stats in the parent container
-  const parentContainer = statsSection.parentElement;
-  parentContainer?.appendChild(newStat1);
-  parentContainer?.appendChild(newStat2);
+  existingStat.parentElement?.parentElement?.appendChild(supplyStat);
+  existingStat.parentElement?.parentElement?.appendChild(usdPriceStat);
+  existingStat.parentElement?.parentElement?.appendChild(ethPriceStat);
 }
 
 function findStatElementByText(container: Element, text: string) {
@@ -40,6 +55,51 @@ function findStatElementByText(container: Element, text: string) {
   }
 
   return parent;
+}
+
+function updateLink(
+  div: HTMLElement,
+  address: string,
+  newValue: string,
+  newText: string
+): void {
+  div.style.marginLeft = "20px";
+  const formattedAddress = "https://www.friend.tech/rooms/" + address;
+  if (div instanceof Element) {
+    // Get the anchor element within the passed element
+    const anchor = div.querySelector("a");
+
+    if (anchor) {
+      // Update the href attribute
+      anchor.setAttribute("href", formattedAddress);
+      // Get the span elements
+      const valueSpan = anchor.querySelector("span span");
+      const textSpan = Array.from(anchor.querySelectorAll("span")).find(
+        (span) => {
+          return (
+            span.textContent?.includes("Following") ||
+            span.textContent?.includes("Followers")
+          );
+        }
+      );
+
+      if (valueSpan) {
+        (valueSpan as HTMLElement).innerText = newText;
+      } else {
+        console.error("Value span not found.");
+      }
+
+      if (textSpan) {
+        textSpan.innerText = "$" + Number(newValue).toFixed(2);
+      } else {
+        console.error("Text span not found.");
+      }
+    } else {
+      console.error("Anchor element not found.");
+    }
+  } else {
+    console.error("Element is not a div.");
+  }
 }
 
 function updateStat(statElement: any, statName: string, statValue: string) {
@@ -66,15 +126,47 @@ function getTwitterProfileFromURL() {
   return null;
 }
 
+type User = {
+  address: string;
+  username: string;
+  supply: number;
+  usdPrice: number;
+  ethPrice: number;
+};
+
 function getStats() {
   const profileName = getTwitterProfileFromURL();
 
   chrome.runtime.sendMessage(
-    { action: "fetchProfileData", profileName: profileName },
-    function (response) {
-      console.log(response);
+    { type: "fetchProfileData", profile: profileName },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError.message);
+      } else {
+        const user = response.data as User;
+        console.log("user", user);
+        if (user) {
+          waitForElement(user);
+        }
+      }
     }
   );
+}
+
+let retries = 10;
+
+function waitForElement(user: User) {
+  const userNameElement = document.querySelector('[data-testid="UserName"]');
+  if (userNameElement) {
+    injectStats(user);
+  } else if (retries > 0) {
+    retries--;
+    setTimeout(() => waitForElement(user), 500); // retry every 500ms
+  } else {
+    console.error(
+      'Failed to find [data-testid="UserName"] after multiple retries.'
+    );
+  }
 }
 
 getStats();
