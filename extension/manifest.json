@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "FriendTech on Twitter/X",
+  "description": "Adds FriendTech stats onto your twitter/x profiles.",
+  "version": "1.0",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": "./friendtech-icon.ico"
+  },
+  "background": {
+    "service_worker": "./background.js"
+  },
+  "permissions": ["storage", "scripting", "notifications"],
+  "host_permissions": ["https://twitter.com/", "https://api.openai.com/"],
+  "externally_connectable": {
+    "matches": ["https://twitter.com/*"]
+  },
+  // "icons": {
+  //   "16": "icons/16.png",
+  //   "32": "icons/32.png",
+  //   "48": "icons/48.png",
+  //   "128": "icons/128.png"
+  // },
+  "web_accessible_resources": [
+    {
+      // "resources": [
+      //   "icons/button.svg",
+      //   "icons/button_error.svg",
+      //   "assets/settings.html"
+      // ],
+      "matches": ["https://twitter.com/*"]
+    }
+  ]
+  // "content_scripts": [
+  //   {
+  //     "js": ["./content.js"],
+  //     "matches": [
+  //       "https://twitter.com/*",
+  //       "https://x.social/*",
+  //       "https://x.com/*"
+  //     ]
+  //   }
+  // ]
+}
