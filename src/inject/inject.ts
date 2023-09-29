@@ -1,150 +1,52 @@
-function injectStats(user: User) {
-  // Locate the stats section using the UserName attribute
-  const userNameElement = document.querySelector('[data-testid="UserName"]');
-  if (!userNameElement) return;
+import { createObserver } from "./dom/create_observer";
+import { injectStats, removeAllAddedStats } from "./dom/statsElement";
+import { User } from "./user/user";
 
-  const statsSection = userNameElement.parentElement;
-  if (!statsSection) return;
-
-  const existingStat =
-    findStatElementByText(statsSection, "Followers") ||
-    findStatElementByText(statsSection, "Following");
-
-  if (!existingStat) return;
-  console.log("existingStat", existingStat);
-  // Clone existing stat to keep its styles and structure
-  const supplyStat = existingStat.parentElement?.cloneNode(true) as HTMLElement;
-  const usdPriceStat = existingStat.parentElement?.cloneNode(
-    true
-  ) as HTMLElement;
-  const ethPriceStat = existingStat.parentElement?.cloneNode(
-    true
-  ) as HTMLElement;
-  // const addressStat = existingStat.cloneNode(true);
-
-  // Modify the cloned stats with your new data
-  updateLink(supplyStat, user.address, "Supply", user.supply.toLocaleString());
-  updateLink(
-    usdPriceStat,
-    user.address,
-    "Price (USD)",
-    user.usdPrice.toLocaleString()
-  );
-  updateLink(
-    ethPriceStat,
-    user.address,
-    "Price (ETH)",
-    user.ethPrice.toLocaleString()
-  );
-
-  // Append the new stats below the existing stats in the parent container
-  existingStat.parentElement?.parentElement?.appendChild(supplyStat);
-  existingStat.parentElement?.parentElement?.appendChild(usdPriceStat);
-  existingStat.parentElement?.parentElement?.appendChild(ethPriceStat);
-}
-
-function findStatElementByText(container: Element, text: string) {
-  const element = Array.from(container.querySelectorAll("span")).find(
-    (el: Element) => el.textContent?.includes(text)
-  );
-  if (!element) return null;
-
-  let parent = element.parentElement;
-  while (parent && parent.tagName !== "A") {
-    parent = parent.parentElement;
-  }
-
-  return parent;
-}
-
-function updateLink(
-  div: HTMLElement,
-  address: string,
-  newValue: string,
-  newText: string
-): void {
-  div.style.marginLeft = "20px";
-  const formattedAddress = "https://www.friend.tech/rooms/" + address;
-  if (div instanceof Element) {
-    // Get the anchor element within the passed element
-    const anchor = div.querySelector("a");
-
-    if (anchor) {
-      // Update the href attribute
-      anchor.setAttribute("href", formattedAddress);
-      // Get the span elements
-      const valueSpan = anchor.querySelector("span span");
-      const textSpan = Array.from(anchor.querySelectorAll("span")).find(
-        (span) => {
-          return (
-            span.textContent?.includes("Following") ||
-            span.textContent?.includes("Followers")
-          );
-        }
-      );
-
-      if (valueSpan) {
-        (valueSpan as HTMLElement).innerText = newText;
-      } else {
-        console.error("Value span not found.");
-      }
-
-      if (textSpan) {
-        textSpan.innerText = "$" + Number(newValue).toFixed(2);
-      } else {
-        console.error("Text span not found.");
-      }
-    } else {
-      console.error("Anchor element not found.");
+let fetchingStats = false;
+// We use this observer to track when the user navigates to a new profile
+// We use div[data-testid="cellInnerDiv" as the thing to observe as it's
+// basically the user's first tweet. Using other ones can be more finicky as
+// the profile dom doesn't always get recreated when navigating to a new
+// profile. However, a user tweet's are always recreated.
+const observer = createObserver('div[data-testid="cellInnerDiv"]', () => {
+  if (isNewProfile()) {
+    // remove old stats in case dom not recreated
+    removeAllAddedStats();
+    // get new stats
+    if (!fetchingStats) {
+      getStats();
+      fetchingStats = true;
     }
-  } else {
-    console.error("Element is not a div.");
   }
-}
+});
 
-function updateStat(statElement: any, statName: string, statValue: string) {
-  // Find the element that contains the name of the stat and update it
-  const nameElement: any = Array.from(
-    statElement.querySelectorAll("span")
-  ).find(
-    (el: any) =>
-      el.textContent.includes("Following") ||
-      el.textContent.includes("Followers")
-  );
-  const valueElement = nameElement ? nameElement.nextElementSibling : null;
+observer.observe(document.body, { childList: true, subtree: true });
 
-  if (nameElement) nameElement.textContent = statName;
-  if (valueElement) valueElement.textContent = statValue;
-}
+let currentProfile = "";
 
-function getTwitterProfileFromURL() {
+// Checks if the user has navigated to a new profile and stores the new profile
+// if applicable
+function isNewProfile() {
   const pathname = window.location.pathname;
   const parts = pathname.split("/").filter(Boolean);
   if (parts.length > 0 && parts[0] !== "hashtag" && parts[0] !== "i") {
-    return parts[0];
+    if (currentProfile !== parts[0]) {
+      currentProfile = parts[0]; // if new, store
+      return true;
+    }
   }
-  return null;
+  return false;
 }
 
-type User = {
-  address: string;
-  username: string;
-  supply: number;
-  usdPrice: number;
-  ethPrice: number;
-};
-
 function getStats() {
-  const profileName = getTwitterProfileFromURL();
-
   chrome.runtime.sendMessage(
-    { type: "fetchProfileData", profile: profileName },
+    { type: "fetchProfileData", profile: currentProfile },
     (response) => {
+      fetchingStats = false;
       if (chrome.runtime.lastError) {
         console.error(chrome.runtime.lastError.message);
       } else {
         const user = response.data as User;
-        console.log("user", user);
         if (user) {
           waitForElement(user);
         }
@@ -158,8 +60,10 @@ let retries = 10;
 function waitForElement(user: User) {
   const userNameElement = document.querySelector('[data-testid="UserName"]');
   if (userNameElement) {
+    console.log("injecting stats");
     injectStats(user);
   } else if (retries > 0) {
+    console.log("waiting");
     retries--;
     setTimeout(() => waitForElement(user), 500); // retry every 500ms
   } else {
@@ -168,7 +72,3 @@ function waitForElement(user: User) {
     );
   }
 }
-
-getStats();
-
-// injectStats();
