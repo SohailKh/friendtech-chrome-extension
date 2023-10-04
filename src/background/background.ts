@@ -4,22 +4,23 @@ chrome.scripting.registerContentScripts([
   {
     id: `main_context_inject_${Math.random()}`,
     world: "ISOLATED",
-    matches: ["https://twitter.com/*"],
-    js: ["./inject.js"],
+    matches: [
+      "https://twitter.com/*",
+      "https://x.com/",
+      "https://x.com/*",
+      "https://twitter.com/",
+    ],
+    js: ["./injectProfile.js", "./injectTimeline.js"],
+    css: ["./inject.css"],
   },
 ]);
 
 // instantiate client
 const client = new StatsClient();
 
-type Message = {
-  type: "fetchProfileData";
-  profile: string;
-};
-
 // listen for messages sent from the extension and make appropriate request
 chrome.runtime.onMessage.addListener(
-  (message: Message, sender: any, sendResponse: any) => {
+  (message: any, sender: any, sendResponse: any) => {
     if (message.type === "fetchProfileData") {
       client
         .getStats(message.profile)
@@ -38,7 +39,24 @@ chrome.runtime.onMessage.addListener(
           sendResponse({ success: false, error: errorString });
         });
 
-      return true; // Indicates you will respond asynchronously
+      return true;
+    }
+
+    if (message.type === "checkExists") {
+      client.checkIfExists(message.usernames).then((data: [ProfileStatus]) => {
+        console.log(data);
+        if (!data) {
+          sendResponse({ success: false, error: "No data returned" });
+        } else {
+          sendResponse({ success: true, data: data });
+        }
+      });
+      return true;
     }
   }
 );
+
+export type ProfileStatus = {
+  exists: boolean;
+  username: string;
+};

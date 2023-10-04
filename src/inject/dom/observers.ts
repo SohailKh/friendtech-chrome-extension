@@ -4,7 +4,10 @@ type ElementObserver = (
 ) => MutationObserver;
 
 // Track when an element matching the selector is added to the DOM
-export const createObserver: ElementObserver = (selector, onElementAdded) => {
+export const createProfileObserver: ElementObserver = (
+  selector,
+  onElementAdded
+) => {
   return new MutationObserver((mutations_list) => {
     mutations_list.forEach((mutation) => {
       const addedNodes = mutation.addedNodes as unknown as HTMLElement[]; // wrong typings
@@ -19,3 +22,14 @@ export const createObserver: ElementObserver = (selector, onElementAdded) => {
     });
   });
 };
+
+// Check for any change
+export function createNodeObserver(
+  targetNode: Node,
+  options: MutationObserverInit,
+  callback: MutationCallback
+): MutationObserver | null {
+  const observer = new MutationObserver(callback);
+  observer.observe(targetNode, options);
+  return observer;
+}

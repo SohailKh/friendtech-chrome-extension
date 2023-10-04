@@ -45,6 +45,9 @@ export function injectStats(user: User) {
     user.ethPrice.toLocaleString()
   );
 
+  // make the followers/following be margin-right: 20px
+  updateMarginsOnExistingElements(statsSection);
+
   // Append the new stats to be aligned next to the existing ones
   existingStat.parentElement?.parentElement?.appendChild(supplyStat);
   existingStat.parentElement?.parentElement?.appendChild(usdPriceStat);
@@ -88,7 +91,7 @@ function replaceStat(
   newText: string,
   isUSD: boolean = false
 ): void {
-  div.style.marginLeft = "20px"; // Add some spacing between the stats
+  div.style.marginRight = "20px"; // Add some spacing between the stats
 
   if (div instanceof Element) {
     // Get the anchor element within the passed element
@@ -118,5 +121,21 @@ function replaceStat(
         textSpan.innerText = newValue;
       }
     }
+  }
+}
+
+function updateMarginsOnExistingElements(container: Element) {
+  const following = findFollowElement(container, "Following");
+  const followers = findFollowElement(container, "Followers");
+  const subscriptions = findFollowElement(container, "Subscriptions");
+
+  if (following?.parentElement) {
+    following.parentElement.style.marginRight = "20px";
+  }
+  if (followers?.parentElement) {
+    followers.parentElement.style.marginRight = "20px";
+  }
+  if (subscriptions?.parentElement) {
+    subscriptions.parentElement.style.marginRight = "20px";
   }
 }

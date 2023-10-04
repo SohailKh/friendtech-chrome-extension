@@ -1,4 +1,4 @@
-import { createObserver } from "./dom/create_observer";
+import { createProfileObserver } from "./dom/observers";
 import { injectStats, removeAllAddedStats } from "./dom/statsElement";
 import { User } from "./user/user";
 
@@ -8,17 +8,20 @@ let fetchingStats = false;
 // basically the user's first tweet. Using other ones can be more finicky as
 // the profile dom doesn't always get recreated when navigating to a new
 // profile. However, a user tweet's are always recreated.
-const observer = createObserver('div[data-testid="cellInnerDiv"]', () => {
-  if (isNewProfile()) {
-    // remove old stats in case dom not recreated
-    removeAllAddedStats();
-    // get new stats
-    if (!fetchingStats) {
-      getStats();
-      fetchingStats = true;
+const observer = createProfileObserver(
+  'div[data-testid="cellInnerDiv"]',
+  () => {
+    if (isNewProfile()) {
+      // remove old stats in case dom not recreated
+      removeAllAddedStats();
+      // get new stats
+      if (!fetchingStats) {
+        getStats();
+        fetchingStats = true;
+      }
     }
   }
-});
+);
 
 observer.observe(document.body, { childList: true, subtree: true });
 
@@ -40,7 +43,7 @@ function isNewProfile() {
 
 function getStats() {
   chrome.runtime.sendMessage(
-    { type: "fetchProfileData", profile: currentProfile },
+    { profile: currentProfile, type: "fetchProfileData" },
     (response) => {
       fetchingStats = false;
       if (chrome.runtime.lastError) {
@@ -60,15 +63,13 @@ let retries = 10;
 function waitForElement(user: User) {
   const userNameElement = document.querySelector('[data-testid="UserName"]');
   if (userNameElement) {
-    console.log("injecting stats");
     injectStats(user);
   } else if (retries > 0) {
-    console.log("waiting");
     retries--;
     setTimeout(() => waitForElement(user), 500); // retry every 500ms
   } else {
     console.error(
-      'Failed to find [data-testid="UserName"] after multiple retries.'
+      "Failed to find username div after multiple retries. This is likely due to a change in the Twitter DOM. DM me on friendtech if you need it to be updated."
     );
   }
 }

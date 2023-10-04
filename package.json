@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "extension": "bun run clean && webpack",
+    "extension": "webpack",
     "export": "next build && npm run copy-out && npm run copy-public",
     "dev": "next dev",
     "build": "next build",

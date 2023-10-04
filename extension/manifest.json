@@ -3,10 +3,6 @@
   "name": "FriendTech on Twitter/X",
   "description": "Adds FriendTech stats onto your twitter/x profiles.",
   "version": "1.0",
-  "action": {
-    "default_popup": "index.html",
-    "default_icon": "./friendtech-icon.ico"
-  },
   "background": {
     "service_worker": "./background.js"
   },
@@ -21,6 +17,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "inject.css",
         "icons/button.svg",
         "icons/button_error.svg",
         "assets/settings.html"

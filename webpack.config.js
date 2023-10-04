@@ -3,9 +3,9 @@ const path = require("path");
 module.exports = {
   mode: "production",
   entry: {
-    inject: "./src/inject/inject.ts",
+    injectProfile: "./src/inject/injectProfile.ts",
+    injectTimeline: "./src/inject/injectTimeline.ts",
     background: "./src/background/background.ts",
-    // settings: './src/settings/settings.tsx',
   },
   optimization: {
     minimize: false,
