@@ -10,4 +10,4 @@ This is a chrome extension that adds visiblity of friend.tech into x/twitter.com
 1. Clone this repo to your machine
 2. Open [chrome://extensions/](chrome://extensions/) in your browser
 3. Check the box for Developer mode in the top right
-4. Press **Load Unpacked** button and select the folder with the code
+4. Press **Load Unpacked** button and select the "extensions" folder with the code
